@@ -98,6 +98,7 @@ local ncus = {
 --[[ UI ELEMENTS ]]
 local nc_enable = ui.new_checkbox(menu[1], menu[2], "Enable NCESP")
 local nc_health = ui.new_combobox(menu[1], menu[2], "Health bar", {"Off", "Flat", "Gradient"})
+local nc_box = ui.new_combobox(menu[1], menu[2], "Box", {"Off", "2D", "2D Rainbow", "More coming soon"})
 local nc_name = ui.new_checkbox(menu[1], menu[2], "Name label")
 local nc_weapon = ui.new_checkbox(menu[1], menu[2], "Weapon label")
 local nc_weapon_clr = ui.new_color_picker(menu[1], menu[2], "weaponclr", 200, 255, 190, 255)
@@ -179,6 +180,16 @@ local function HSVToRGB(h, s, v)
     return r * 255, g * 255, b * 255
 end
 
+local function func_rgb_rainbowize(frequency, rgb_split_ratio)
+    local r, g, b, a = HSVToRGB(globals.realtime() * frequency, 1, 1)
+
+    r = r * rgb_split_ratio
+    g = g * rgb_split_ratio
+    b = b * rgb_split_ratio
+
+    return r, g, b
+end
+
 local function lerp(h1, s1, v1, h2, s2, v2, t)
     local h = (h2 - h1) * t + h1
     local s = (s2 - s1) * t + s1
@@ -222,7 +233,7 @@ local function draw_nce()
         end
 
         surface.draw_filled_outlined_rect(x/y, (y/2+2), 220, rect_add, 53, 66, 69, 200, 15, 150, 150, 255)
-        surface.draw_text(x/y+(220/2-30), (y/2+2), 255, 255, 255, 255, nc_panel_header, "Info Panel")
+        surface.draw_text(x/y+(220/2-30), (y/2+2)+1, 255, 255, 255, 255, nc_panel_header, "Info Panel")
 
         surface.draw_filled_outlined_rect(x/y, (y/2+2)+rect_add, 220, rect_add, 53, 66, 69, 200, 15, 150, 150, 255)
         surface.draw_text(x/y+2, (y/2+3)+rect_add, 255, 255, 255, 255, nc_panel_info, string.format("Speed: %s", math.floor(velocity)))
@@ -266,7 +277,7 @@ local function draw_nce()
         local enemy = enemies[i]
         local bbox = {entity.get_bounding_box(enemy)}
         if bbox[1] == nil and bbox[2] == nil then return end
-        local height = bbox[4]-bbox[2]
+        local height, width = bbox[4]-bbox[2], bbox[3]-bbox[1]
 
         --[[ HEALTH ]]
         local health = entity.get_prop(enemy, "m_iHealth")
@@ -308,6 +319,23 @@ local function draw_nce()
             ui.set(shadow_color, r,g,b,175)
         end
         --[[ END_TEAM_COLOR ]]
+
+        --[[ BOX_ESP ]]
+
+        if ui.get(nc_box) == "2D" then
+            surface.draw_outlined_rect(bbox[1], bbox[2], width, height+2, r,g,b,a)
+        elseif ui.get(nc_box) == "2D Rainbow" then
+            rr, rg, rb = func_rgb_rainbowize(0.15, 1)
+
+            renderer.gradient(bbox[1], bbox[2], 1, height+2, rr, rg, rb, 255, rb, rg, rr, 255, false)
+            renderer.gradient(bbox[3], bbox[2], 1, height+2, rr, rg, rb, 255, rb, rg, rr, 255, false)
+
+            renderer.gradient(bbox[1], bbox[2], width, 1, rr, rg, rb, 255, rb, rg, rr, 255, false)
+            renderer.gradient(bbox[1], bbox[4]+2, width+1, 1, rr, rg, rb, 255, rg, rb, rr, 255, false)
+
+        end
+        --[[ END_BOX_ESP ]]
+
 
         --[[ STRINGS ]]
         if ui.get(nc_name) then
