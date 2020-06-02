@@ -206,6 +206,7 @@ local _, glow_color = ui.reference("Visuals", "Player esp", "Glow")
 local function draw_nce()
     local x,y = client.screen_size()
     if ui.get(nc_info) then
+        if not entity.is_alive(entity.get_local_player()) then return end
         local vx, vy, vz = entity.get_prop(entity.get_local_player(), "m_vecVelocity")
         local velocity = math.sqrt(vx * vx + vy * vy)
         if velocity < 2 then velocity = 0 end -- I know this makes it inaccurate, but I care more about aesthetics than anything.
@@ -253,7 +254,7 @@ local function draw_nce()
         if bodyyaw == "Off" then bodyyaw = "Disabled" end
 
         if antiaim then antiaim = pitch.."/"..bodyyaw else antiaim = "Disabled" end
-        surface.draw_text(x/y+2, (y/2+3)+rect_add*5, 255, 255, 255, 255, nc_panel_info, string.format("Aim Aim: %s", antiaim))
+        surface.draw_text(x/y+2, (y/2+3)+rect_add*5, 255, 255, 255, 255, nc_panel_info, string.format("Anti Aim: %s", antiaim))
 
 
         indicators = {}
