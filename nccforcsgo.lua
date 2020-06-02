@@ -4,7 +4,6 @@
     nmchris - Used his get_weapon function + weapons table to get the proper weapon names
     GigsD4X - Used his HSVtoRGB function
     TTVM Discord - Feedback
-    
  ]]
 
 --[[ REQUIREMENTS ]]
@@ -224,14 +223,17 @@ local function draw_nce()
         local rect_add = 32/2
         for i = 1, #indicators do 
             cur_i = indicators[i]
+            
             if cur_i.text == "DT" then cur_i.text = "Double Tap"
             elseif cur_i.text == "LC" then cur_i.text = "Lag Compensation"
             elseif cur_i.text == "DUCK" then cur_i.text = "Fake Duck"
             end
-            surface.draw_filled_outlined_rect(x/y, (y/2+2)+rect_add*5+(i * 16), 220, rect_add, 53, 66, 69, 200, 15, 150, 150, 255)
-            surface.draw_text(x/y+2, (y/2+3)+rect_add*5+(i * 16), cur_i.r, cur_i.g, cur_i.b, cur_i.a, nc_panel_info, string.format("%s", cur_i.text))
+            surface.draw_filled_outlined_rect(x/y, (y/2+2)+rect_add*6+(i * 16), 220, rect_add, 53, 66, 69, 200, 15, 150, 150, 255)
+            surface.draw_text(x/y+2, (y/2+3)+rect_add*6+(i * 16), cur_i.r, cur_i.g, cur_i.b, cur_i.a, nc_panel_info, string.format("%s", cur_i.text))
         end
 
+        
+        
         surface.draw_filled_outlined_rect(x/y, (y/2+2), 220, rect_add, 53, 66, 69, 200, 15, 150, 150, 255)
         surface.draw_text(x/y+(220/2-30), (y/2+2)+1, 255, 255, 255, 255, nc_panel_header, "Info Panel")
 
@@ -267,6 +269,10 @@ local function draw_nce()
         if antiaim then antiaim = pitch.."/"..bodyyaw else antiaim = "Disabled" end
         surface.draw_text(x/y+2, (y/2+3)+rect_add*5, 255, 255, 255, 255, nc_panel_info, string.format("Anti Aim: %s", antiaim))
 
+        surface.draw_filled_outlined_rect(x/y, (y/2+2)+rect_add*6, 220, rect_add, 53, 66, 69, 200, 15, 150, 150, 255)
+        local fakepeek = ui.get(ui.reference("aa", "other", "fake peek"))
+        if fakepeek then fakepeek = "Active" else fakepeek = "Inactive" end
+        surface.draw_text(x/y+2, (y/2+3)+rect_add*6, 255, 255, 255, 255, nc_panel_info, string.format("Fake Peek: %s", fakepeek))
 
         indicators = {}
     end
@@ -342,11 +348,10 @@ local function draw_nce()
             surface.draw_text(bbox[1]+3, bbox[2]-name_add, r, g, b, a, nc_font, entity.get_player_name(enemy))
         end
         if ui.get(nc_weapon) then
-            local grab_weapon_string = get_weapon(enemy)
             name_add = 35
             ncu_add = 35
             local wr, wg, wb, wa = ui.get(nc_weapon_clr)
-            surface.draw_text(bbox[1]+3, bbox[2]-20, wr, wg, wb, wa, nc_font, grab_weapon_string)
+            surface.draw_text(bbox[1]+3, bbox[2]-20, wr, wg, wb, wa, nc_font, get_weapon(enemy))
         else
             ncu_add = 23
             name_add = 20
