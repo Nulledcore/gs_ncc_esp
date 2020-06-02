@@ -285,11 +285,11 @@ local function draw_nce()
         local hr, hg, hb = HSVToRGB(h/360, s, v)
 
         if ui.get(nc_health) == "Flat" then
-            renderer.rectangle(bbox[1]-6, bbox[2]-1, 4, height+4.5, 17, 17, 17, 255)
-            renderer.rectangle(bbox[1]-5, bbox[4]+2, 2, (-height*health/100)-2, hr, hg, hb, 255)
+            renderer.rectangle(bbox[1]-6, bbox[2]-1, 5, height+4, 17, 17, 17, 255)
+            renderer.rectangle(bbox[1]-5, bbox[4]+2, 3, (-height*health/100)-2, hr, hg, hb, 255)
         elseif ui.get(nc_health) == "Gradient" then
-            renderer.rectangle(bbox[1]-6, bbox[2]-1, 4, height+4.5, 17, 17, 17, 255)
-            renderer.gradient(bbox[1]-5, bbox[4]+2, 2, (-height*health/100)-2, 255, 100, 0, 255, hr, hg, hb, 255, false)
+            renderer.rectangle(bbox[1]-6, bbox[2]-1, 5, height+4, 17, 17, 17, 255)
+            renderer.gradient(bbox[1]-5, bbox[4]+2, 3, (-height*health/100)-2, 255, 45, 0, 255, hr, hg, hb, 255, false)
         else
         end
         --[[ END_HEALTH ]]
@@ -327,10 +327,10 @@ local function draw_nce()
         elseif ui.get(nc_box) == "2D Rainbow" then
             rr, rg, rb = func_rgb_rainbowize(0.15, 1)
 
-            renderer.gradient(bbox[1], bbox[2], 1, height+2, rr, rg, rb, 255, rb, rg, rr, 255, false)
-            renderer.gradient(bbox[3], bbox[2], 1, height+2, rr, rg, rb, 255, rb, rg, rr, 255, false)
+            renderer.gradient(bbox[1], bbox[2], 1, height+2, rr, rg, rb, 255, rg, rb, rr, 255, false)
+            renderer.gradient(bbox[3], bbox[2], 1, height+2, rr, rg, rb, 255, rg, rb, rr, 255, false)
 
-            renderer.gradient(bbox[1], bbox[2], width, 1, rr, rg, rb, 255, rb, rg, rr, 255, false)
+            renderer.gradient(bbox[1], bbox[2], width, 1, rr, rg, rb, 255, rg, rb, rr, 255, false)
             renderer.gradient(bbox[1], bbox[4]+2, width+1, 1, rr, rg, rb, 255, rg, rb, rr, 255, false)
 
         end
