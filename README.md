@@ -8,5 +8,11 @@ Nullcore ESP for gamesense.pub
 - Info panel (based on the old info panel on nullcore)
 - Team based colors (none/spec/t/ct)
 
+
+ESP Example:
+
+![esp_example](https://traps.best/owo/jbdv6.png)
+
+
 > Requirements
 https://gamesense.pub/forums/viewtopic.php?id=18793
