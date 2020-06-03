@@ -3,7 +3,9 @@
     V952 - Dev of Nullcore which I based this lua on
     nmchris - Used his get_weapon function + weapons table to get the proper weapon names
     GigsD4X - Used his HSVtoRGB function
+    Aviarita - Surface library
     TTVM Discord - Feedback
+    
  ]]
 
 --[[ REQUIREMENTS ]]
@@ -76,24 +78,6 @@ local weapons = {
     [523] = "Talon Knife",
 }
 
---[[ How to add your own steam64 to the NCU/NCD list
-You get the steam64 from either entity.get_steam64(player) or [U:1:?????????]
-
-local ncds/ncus = {
-    "STEAM64",
-    "STEAM64"
-}
-
-]]
-
-local ncds = {
-    "288728546" -- Nulledcore
-}
-
-local ncus = {
-    "157388780" -- Womble
-}
-
 --[[ UI ELEMENTS ]]
 local nc_enable = ui.new_checkbox(menu[1], menu[2], "Enable NCESP")
 local nc_health = ui.new_combobox(menu[1], menu[2], "Health bar", {"Off", "Flat", "Gradient"})
@@ -101,7 +85,7 @@ local nc_box = ui.new_combobox(menu[1], menu[2], "Box", {"Off", "2D", "2D Rainbo
 local nc_name = ui.new_checkbox(menu[1], menu[2], "Name label")
 local nc_weapon = ui.new_checkbox(menu[1], menu[2], "Weapon label")
 local nc_weapon_clr = ui.new_color_picker(menu[1], menu[2], "weaponclr", 200, 255, 190, 255)
-local nc_ncu = ui.new_checkbox(menu[1], menu[2], "NCU label (W.I.P)")
+local nc_ncu = ui.new_checkbox(menu[1], menu[2], "NCU label (Coming soon)")
 local nc_ncu_clr = ui.new_color_picker(menu[1], menu[2], "ncuclr", 67, 108, 142, 255)
 local nc_info = ui.new_checkbox(menu[1], menu[2], "Info panel")
 local nc_team = ui.new_multiselect(menu[1], menu[2], "Team based colors", {"Glow", "Chams", "Chams XQZ", "Shadow"})
@@ -115,32 +99,7 @@ local nc_team_t = ui.new_color_picker(menu[1], menu[2], "t_clr", 255, 61, 61, 25
 ui.new_label(menu[1], menu[2], "Team: CT color")
 local nc_team_ct = ui.new_color_picker(menu[1], menu[2], "ct_clr", 154, 205, 255, 255)
 
-
 --[[ FUNCTIONS ]]
-local nc_type = ""
-local function nc_user() -- function to check the ncu/ncd tables
-    if not entity.get_local_player() or entity.get_local_player() == nil then return end
-    local id = entity.get_steam64(entity.get_local_player())
-    if id == nil then return end
-    for k, v in pairs(ncus) do
-        if(entity.get_local_player() ~= nil) then
-            if v == entity.get_steam64(entity.get_local_player()) then
-                nc_type = "NCU"
-                return true
-            end
-        end
-    end
-    for k, v in pairs(ncds) do
-        if(entity.get_local_player() ~= nil) then
-            if v == entity.get_steam64(entity.get_local_player()) then
-                nc_type = "NCD"
-                return true
-            end
-        end
-    end
-    return false;
-end
-
 
 local function contains(table, val)
     for i=1,#table do
@@ -219,7 +178,7 @@ local function draw_nce()
         if not entity.is_alive(entity.get_local_player()) then return end
         local vx, vy, vz = entity.get_prop(entity.get_local_player(), "m_vecVelocity")
         local velocity = math.sqrt(vx * vx + vy * vy)
-        if velocity < 2 then velocity = 0 end -- I know this makes it inaccurate, but I care more about aesthetics than anything.
+        if velocity < 2 then velocity = 0 end
         local rect_add = 32/2
         for i = 1, #indicators do 
             cur_i = indicators[i]
@@ -232,8 +191,6 @@ local function draw_nce()
             surface.draw_text(x/y+2, (y/2+3)+rect_add*6+(i * 16), cur_i.r, cur_i.g, cur_i.b, cur_i.a, nc_panel_info, string.format("%s", cur_i.text))
         end
 
-        
-        
         surface.draw_filled_outlined_rect(x/y, (y/2+2), 220, rect_add, 53, 66, 69, 200, 15, 150, 150, 255)
         surface.draw_text(x/y+(220/2-30), (y/2+2)+1, 255, 255, 255, 255, nc_panel_header, "Info Panel")
 
@@ -257,7 +214,6 @@ local function draw_nce()
         end
         surface.draw_text(x/y+2, (y/2+3)+rect_add*4, 255, 255, 255, 255, nc_panel_info, string.format("Fake Lag: %s", fakelag))
 
-        -- antiaim stuff (ik it's messy, but I like my aesthetics)
         surface.draw_filled_outlined_rect(x/y, (y/2+2)+rect_add*5, 220, rect_add, 53, 66, 69, 200, 15, 150, 150, 255)
         local antiaim = ui.get(ui.reference("aa", "anti-aimbot angles", "enabled"))
         local pitch = ui.get(ui.reference("aa", "anti-aimbot angles", "pitch"))
@@ -349,19 +305,10 @@ local function draw_nce()
         end
         if ui.get(nc_weapon) then
             name_add = 35
-            ncu_add = 35
             local wr, wg, wb, wa = ui.get(nc_weapon_clr)
             surface.draw_text(bbox[1]+3, bbox[2]-20, wr, wg, wb, wa, nc_font, get_weapon(enemy))
         else
-            ncu_add = 23
             name_add = 20
-        end
-
-        if ui.get(nc_ncu) then
-            if nc_user() then -- as of now, the ncu is based on steam64 as I don't have a host to send data to.
-                local cr, cg, cb, ca = ui.get(nc_ncu_clr)
-                surface.draw_text(bbox[1]+3, bbox[2]-ncu_add-ncu_add/3-2, cr, cg, cb, ca, nc_font, string.format("%s: %s", nc_type, entity.get_player_name(enemy)))
-            end
         end
         --[[ END_STRINGS ]]
     end
