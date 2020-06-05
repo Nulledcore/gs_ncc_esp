@@ -81,12 +81,14 @@ local weapons = {
 --[[ UI ELEMENTS ]]
 local nc_enable = ui.new_checkbox(menu[1], menu[2], "Enable NCESP")
 local nc_health = ui.new_combobox(menu[1], menu[2], "Health bar", {"Off", "Flat", "Gradient"})
-local nc_box = ui.new_combobox(menu[1], menu[2], "Box", {"Off", "2D", "2D Rainbow", "More coming soon"})
+local nc_box = ui.new_combobox(menu[1], menu[2], "Box", {"Off", "2D", "2D Rainbow"})
 local nc_name = ui.new_checkbox(menu[1], menu[2], "Name label")
 local nc_weapon = ui.new_checkbox(menu[1], menu[2], "Weapon label")
 local nc_weapon_clr = ui.new_color_picker(menu[1], menu[2], "weaponclr", 200, 255, 190, 255)
-local nc_ncu = ui.new_checkbox(menu[1], menu[2], "NCU label (Coming soon)")
+local nc_ncu = ui.new_checkbox(menu[1], menu[2], "NCU label (To do)")
 local nc_ncu_clr = ui.new_color_picker(menu[1], menu[2], "ncuclr", 67, 108, 142, 255)
+local nc_distance = ui.new_checkbox(menu[1], menu[2], "Distance label")
+local nc_distance_clr = ui.new_color_picker(menu[1], menu[2], "distanceclr", 67, 108, 142, 255)
 local nc_info = ui.new_checkbox(menu[1], menu[2], "Info panel")
 local nc_team = ui.new_multiselect(menu[1], menu[2], "Team based colors", {"Glow", "Chams", "Chams XQZ", "Shadow"})
 
@@ -108,6 +110,10 @@ local function contains(table, val)
         end
     end
     return false
+end
+
+local function get_distance_in_feet(a_x, a_y, a_z, b_x, b_y, b_z)
+    return math.ceil(math.sqrt(math.pow(a_x - b_x, 2) + math.pow(a_y - b_y, 2) + math.pow(a_z - b_z, 2)) * 0.0254 / 0.3048)
 end
 
 local function get_weapon(enemy) -- s/o to nmchris
@@ -164,7 +170,7 @@ client.set_event_callback("indicator", on_indicator)
 --[[ DRAW ]]
 local r,g,b
 local name_add = 0
-local ncu_add = 0
+local distance_add = 0
 local cur_i
 
 local _, chams_color = ui.reference("Visuals", "Colored models", "Player")
@@ -199,7 +205,7 @@ local function draw_nce()
 
         surface.draw_filled_outlined_rect(x/y, (y/2+2)+rect_add*2, 220, rect_add, 53, 66, 69, 200, 15, 150, 150, 255)
         local aimbot = ui.get(ui.reference("rage", "aimbot", "enabled"))
-        if aimbot then aimbot = "Active" else aimbot = "Inactive" end
+        if aimbot or ui.get(ui.reference("legit", "aimbot", "enabled")) then aimbot = "Active" else aimbot = "Inactive" end
         surface.draw_text(x/y+2, (y/2+3)+rect_add*2, 255, 255, 255, 255, nc_panel_info, string.format("Aim Bot: %s", aimbot))
         
         surface.draw_filled_outlined_rect(x/y, (y/2+2)+rect_add*3, 220, rect_add, 53, 66, 69, 200, 15, 150, 150, 255)
@@ -240,6 +246,10 @@ local function draw_nce()
         local bbox = {entity.get_bounding_box(enemy)}
         if bbox[1] == nil and bbox[2] == nil then return end
         local height, width = bbox[4]-bbox[2], bbox[3]-bbox[1]
+        local epx, epy, epz = entity.get_prop(enemy, "m_vecOrigin")
+        local lpx, lpy, lpz = entity.get_prop(entity.get_local_player(), "m_vecOrigin")
+        local distance = get_distance_in_feet(lpx, lpy, lpz, epx, epy, epz)
+
 
         --[[ HEALTH ]]
         local health = entity.get_prop(enemy, "m_iHealth")
@@ -247,11 +257,11 @@ local function draw_nce()
         local hr, hg, hb = HSVToRGB(h/360, s, v)
 
         if ui.get(nc_health) == "Flat" then
-            renderer.rectangle(bbox[1]-6, bbox[2]-1, 5, height+4, 17, 17, 17, 255)
-            renderer.rectangle(bbox[1]-5, bbox[4]+2, 3, (-height*health/100)-2, hr, hg, hb, 255)
+            renderer.rectangle(bbox[1]-6, bbox[2]-1, 4, height+4, 17, 17, 17, 255)
+            renderer.rectangle(bbox[1]-5, bbox[4]+2, 2, (-height*health/100)-2, hr, hg, hb, 255)
         elseif ui.get(nc_health) == "Gradient" then
-            renderer.rectangle(bbox[1]-6, bbox[2]-1, 5, height+4, 17, 17, 17, 255)
-            renderer.gradient(bbox[1]-5, bbox[4]+2, 3, (-height*health/100)-2, 255, 45, 0, 255, hr, hg, hb, 255, false)
+            renderer.rectangle(bbox[1]-6, bbox[2]-1, 4, height+4, 17, 17, 17, 255)
+            renderer.gradient(bbox[1]-5, bbox[4]+2, 2, (-height*health/100)-2, 255, 45, 0, 255, hr, hg, hb, 255, false)
         else
         end
         --[[ END_HEALTH ]]
@@ -294,7 +304,6 @@ local function draw_nce()
 
             renderer.gradient(bbox[1], bbox[2], width, 1, rr, rg, rb, 255, rg, rb, rr, 255, false)
             renderer.gradient(bbox[1], bbox[4]+2, width+1, 1, rr, rg, rb, 255, rg, rb, rr, 255, false)
-
         end
         --[[ END_BOX_ESP ]]
 
@@ -305,11 +314,19 @@ local function draw_nce()
         end
         if ui.get(nc_weapon) then
             name_add = 35
+            distance_add = 50
             local wr, wg, wb, wa = ui.get(nc_weapon_clr)
             surface.draw_text(bbox[1]+3, bbox[2]-20, wr, wg, wb, wa, nc_font, get_weapon(enemy))
         else
             name_add = 20
+            distance_add = 35
         end
+
+        if ui.get(nc_distance) then
+            local dr, dg, db, da = ui.get(nc_distance_clr)
+            surface.draw_text(bbox[1]+3, bbox[2]-distance_add, dr, dg, db, da, nc_font, string.format("Distance: %sf", distance))
+        end
+
         --[[ END_STRINGS ]]
     end
 end
