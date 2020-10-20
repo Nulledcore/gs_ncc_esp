@@ -11,7 +11,7 @@ Nullcore ESP for gamesense.pub
 
 ESP Example:
 
-![esp_example](https://traps.best/owo/jbdv6.png)
+![esp_example](https://nullified.s-ul.eu/M0p3Bg8z)
 
 
 > Requirements
