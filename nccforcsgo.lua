@@ -7,15 +7,21 @@
     TTVM Discord - Feedback
     
  ]]
-
---[[ REQUIREMENTS ]]
 local surface = require('gamesense/surface')
 local nc_font = surface.create_font("Verdana", 16, 600, 0x200)
+local nc_font_old = surface.create_font("Verdana", 16, 400, 0x200)
 local nc_panel_header = surface.create_font("Verdana", 13, 600, 0x200)
 local nc_panel_info = surface.create_font("Verdana", 12, 400, 0x200)
 
---[[ TABLES ]]
-local menu = {"lua", "b"}
+local menu = {"lua", "a"}
+local nc_info = ui.new_checkbox(menu[1], menu[2], "Info panel")
+local nc_health = ui.new_combobox(menu[1], menu[2], "Health bar", {"Off", "Flat", "Gradient"})
+local nc_box = ui.new_combobox(menu[1], menu[2], "Box", {"Off", "2D", "2D Rainbow"})
+
+local nc_font_select = ui.new_combobox(menu[1], menu[2], "Font type", {"New", "Old"})
+local nc_conditions = ui.new_checkbox(menu[1], menu[2], "Conditions label")
+
+
 local weapons = {
     [1] = "Desert Eagle",
     [2] = "Dual Berettas",
@@ -78,51 +84,35 @@ local weapons = {
     [523] = "Talon Knife",
 }
 
---[[ UI ELEMENTS ]]
-local nc_enable = ui.new_checkbox(menu[1], menu[2], "Enable NCESP")
-local nc_health = ui.new_combobox(menu[1], menu[2], "Health bar", {"Off", "Flat", "Gradient"})
-local nc_box = ui.new_combobox(menu[1], menu[2], "Box", {"Off", "2D", "2D Rainbow"})
-local nc_name = ui.new_checkbox(menu[1], menu[2], "Name label")
-local nc_weapon = ui.new_checkbox(menu[1], menu[2], "Weapon label")
-local nc_weapon_clr = ui.new_color_picker(menu[1], menu[2], "weaponclr", 200, 255, 190, 255)
-local nc_ncu = ui.new_checkbox(menu[1], menu[2], "NCU label (To do)")
-local nc_ncu_clr = ui.new_color_picker(menu[1], menu[2], "ncuclr", 67, 108, 142, 255)
-local nc_distance = ui.new_checkbox(menu[1], menu[2], "Distance label")
-local nc_distance_clr = ui.new_color_picker(menu[1], menu[2], "distanceclr", 67, 108, 142, 255)
-local nc_info = ui.new_checkbox(menu[1], menu[2], "Info panel")
-local nc_team = ui.new_multiselect(menu[1], menu[2], "Team based colors", {"Glow", "Chams", "Chams XQZ", "Shadow"})
+local indicators = {}
+local function on_indicator(i)
+    table.insert(indicators, i)
+end
+client.set_event_callback("indicator", on_indicator)
 
-ui.new_label(menu[1], menu[2], "Team: None color")
-local nc_team_none = ui.new_color_picker(menu[1], menu[2], "none_clr", 238, 182, 41, 255)
-ui.new_label(menu[1], menu[2], "Team: Spec color")
-local nc_team_spec = ui.new_color_picker(menu[1], menu[2], "spec_clr", 204, 204, 204, 255)
-ui.new_label(menu[1], menu[2], "Team: T color")
-local nc_team_t = ui.new_color_picker(menu[1], menu[2], "t_clr", 255, 61, 61, 255)
-ui.new_label(menu[1], menu[2], "Team: CT color")
-local nc_team_ct = ui.new_color_picker(menu[1], menu[2], "ct_clr", 154, 205, 255, 255)
+local function lp()
+    local real_lp = entity.get_local_player()
+    if entity.is_alive(real_lp) then
+        return real_lp
+    else
+        local obvserver = entity.get_prop(real_lp, "m_hObserverTarget")
+        return obvserver ~= nil and obvserver <= 64 and obvserver or nil
+    end
+end
 
---[[ FUNCTIONS ]]
+local function collect_players()
+    local results = {}
+    local lp_origin = {entity.get_origin(lp())}
 
-local function contains(table, val)
-    for i=1,#table do
-        if table[i] == val then 
-            return true
+    for i=1, 64 do
+        if entity.is_alive(i) then
+            local player_origin = {entity.get_origin(i)}
+            if player_origin[1] ~= nil and lp_origin[1] ~= nil then
+                table.insert(results, {i})
+            end
         end
     end
-    return false
-end
-
-local function get_distance_in_feet(a_x, a_y, a_z, b_x, b_y, b_z)
-    return math.ceil(math.sqrt(math.pow(a_x - b_x, 2) + math.pow(a_y - b_y, 2) + math.pow(a_z - b_z, 2)) * 0.0254 / 0.3048)
-end
-
-local function get_weapon(enemy) -- s/o to nmchris
-    local weapon_id = entity.get_prop(enemy, "m_hActiveWeapon")
-    if entity.get_prop(weapon_id, "m_iItemDefinitionIndex") ~= nil then
-       local weapon_item_index = bit.band(entity.get_prop(weapon_id, "m_iItemDefinitionIndex"), 0xFFFF)
-        return weapons[weapon_item_index]
-    end
-    return 0
+    return results
 end
 
 local function HSVToRGB(h, s, v)
@@ -161,31 +151,14 @@ local function lerp(h1, s1, v1, h2, s2, v2, t)
     return h, s, v
 end
 
-local indicators = {}
-local function on_indicator(i)
-    table.insert(indicators, i)
-end
-client.set_event_callback("indicator", on_indicator)
 
---[[ DRAW ]]
-local r,g,b
-local name_add = 0
-local distance_add = 0
-local cur_i
-
-local _, chams_color = ui.reference("Visuals", "Colored models", "Player")
-local _, chams_xqz_color = ui.reference("Visuals", "Colored models", "Player behind wall")
-local _, shadow_color = ui.reference("Visuals", "Colored models", "Shadow")
-local _, glow_color = ui.reference("Visuals", "Player esp", "Glow")
-
-local function draw_nce()
+local function draw_infobar()
     local x,y = client.screen_size()
     if ui.get(nc_info) then
         if not entity.is_alive(entity.get_local_player()) then return end
         local vx, vy, vz = entity.get_prop(entity.get_local_player(), "m_vecVelocity")
         local velocity = math.sqrt(vx * vx + vy * vy)
         if velocity < 2 then velocity = 0 end
-        local rect_add = 32/2
         for i = 1, #indicators do 
             cur_i = indicators[i]
             
@@ -193,34 +166,34 @@ local function draw_nce()
             elseif cur_i.text == "LC" then cur_i.text = "Lag Compensation"
             elseif cur_i.text == "DUCK" then cur_i.text = "Fake Duck"
             end
-            surface.draw_filled_outlined_rect(x/y, (y/2+2)+rect_add*6+(i * 16), 220, rect_add, 53, 66, 69, 200, 15, 150, 150, 255)
-            surface.draw_text(x/y+2, (y/2+3)+rect_add*6+(i * 16), cur_i.r, cur_i.g, cur_i.b, cur_i.a, nc_panel_info, string.format("%s", cur_i.text))
+            surface.draw_filled_outlined_rect(x/y, (y/2+2)+32/2*6+(i * 16), 220, 32/2, 53, 66, 69, 200, 15, 150, 150, 255)
+            surface.draw_text(x/y+2, (y/2+3)+32/2*6+(i * 16), cur_i.r, cur_i.g, cur_i.b, cur_i.a, nc_panel_info, string.format("%s", cur_i.text))
         end
 
-        surface.draw_filled_outlined_rect(x/y, (y/2+2), 220, rect_add, 53, 66, 69, 200, 15, 150, 150, 255)
+        surface.draw_filled_outlined_rect(x/y, (y/2+2), 220, 32/2, 53, 66, 69, 200, 15, 150, 150, 255)
         surface.draw_text(x/y+(220/2-30), (y/2+2)+1, 255, 255, 255, 255, nc_panel_header, "Info Panel")
 
-        surface.draw_filled_outlined_rect(x/y, (y/2+2)+rect_add, 220, rect_add, 53, 66, 69, 200, 15, 150, 150, 255)
-        surface.draw_text(x/y+2, (y/2+3)+rect_add, 255, 255, 255, 255, nc_panel_info, string.format("Speed: %s", math.floor(velocity)))
+        surface.draw_filled_outlined_rect(x/y, (y/2+2)+32/2, 220, 32/2, 53, 66, 69, 200, 15, 150, 150, 255)
+        surface.draw_text(x/y+2, (y/2+3)+32/2, 255, 255, 255, 255, nc_panel_info, string.format("Speed: %s", math.floor(velocity)))
 
-        surface.draw_filled_outlined_rect(x/y, (y/2+2)+rect_add*2, 220, rect_add, 53, 66, 69, 200, 15, 150, 150, 255)
+        surface.draw_filled_outlined_rect(x/y, (y/2+2)+32/2*2, 220, 32/2, 53, 66, 69, 200, 15, 150, 150, 255)
         local aimbot = ui.get(ui.reference("rage", "aimbot", "enabled"))
         if aimbot or ui.get(ui.reference("legit", "aimbot", "enabled")) then aimbot = "Active" else aimbot = "Inactive" end
-        surface.draw_text(x/y+2, (y/2+3)+rect_add*2, 255, 255, 255, 255, nc_panel_info, string.format("Aim Bot: %s", aimbot))
+        surface.draw_text(x/y+2, (y/2+3)+32/2*2, 255, 255, 255, 255, nc_panel_info, string.format("Aim Bot: %s", aimbot))
         
-        surface.draw_filled_outlined_rect(x/y, (y/2+2)+rect_add*3, 220, rect_add, 53, 66, 69, 200, 15, 150, 150, 255)
+        surface.draw_filled_outlined_rect(x/y, (y/2+2)+32/2*3, 220, 32/2, 53, 66, 69, 200, 15, 150, 150, 255)
         local triggerbot = ui.get(ui.reference("legit", "triggerbot", "enabled"))
         if triggerbot then triggerbot = "Active" else triggerbot = "Inactive" end
-        surface.draw_text(x/y+2, (y/2+3)+rect_add*3, 255, 255, 255, 255, nc_panel_info, string.format("Trigger Bot: %s", triggerbot))
+        surface.draw_text(x/y+2, (y/2+3)+32/2*3, 255, 255, 255, 255, nc_panel_info, string.format("Trigger Bot: %s", triggerbot))
 
-        surface.draw_filled_outlined_rect(x/y, (y/2+2)+rect_add*4, 220, rect_add, 53, 66, 69, 200, 15, 150, 150, 255)
+        surface.draw_filled_outlined_rect(x/y, (y/2+2)+32/2*4, 220, 32/2, 53, 66, 69, 200, 15, 150, 150, 255)
         local fakelag = ui.get(ui.reference("aa", "fake lag", "limit"))
         if not ui.get(ui.reference("aa", "fake lag", "enabled")) then
             fakelag = "Disabled"
         end
-        surface.draw_text(x/y+2, (y/2+3)+rect_add*4, 255, 255, 255, 255, nc_panel_info, string.format("Fake Lag: %s", fakelag))
+        surface.draw_text(x/y+2, (y/2+3)+32/2*4, 255, 255, 255, 255, nc_panel_info, string.format("Fake Lag: %s", fakelag))
 
-        surface.draw_filled_outlined_rect(x/y, (y/2+2)+rect_add*5, 220, rect_add, 53, 66, 69, 200, 15, 150, 150, 255)
+        surface.draw_filled_outlined_rect(x/y, (y/2+2)+32/2*5, 220, 32/2, 53, 66, 69, 200, 15, 150, 150, 255)
         local antiaim = ui.get(ui.reference("aa", "anti-aimbot angles", "enabled"))
         local pitch = ui.get(ui.reference("aa", "anti-aimbot angles", "pitch"))
         local bodyyaw = ui.get(ui.reference("aa", "anti-aimbot angles", "body yaw"))
@@ -229,107 +202,109 @@ local function draw_nce()
         if bodyyaw == "Off" then bodyyaw = "Disabled" end
 
         if antiaim then antiaim = pitch.."/"..bodyyaw else antiaim = "Disabled" end
-        surface.draw_text(x/y+2, (y/2+3)+rect_add*5, 255, 255, 255, 255, nc_panel_info, string.format("Anti Aim: %s", antiaim))
+        surface.draw_text(x/y+2, (y/2+3)+32/2*5, 255, 255, 255, 255, nc_panel_info, string.format("Anti Aim: %s", antiaim))
 
-        surface.draw_filled_outlined_rect(x/y, (y/2+2)+rect_add*6, 220, rect_add, 53, 66, 69, 200, 15, 150, 150, 255)
+        surface.draw_filled_outlined_rect(x/y, (y/2+2)+32/2*6, 220, 32/2, 53, 66, 69, 200, 15, 150, 150, 255)
         local fakepeek = ui.get(ui.reference("aa", "other", "fake peek"))
         if fakepeek then fakepeek = "Active" else fakepeek = "Inactive" end
-        surface.draw_text(x/y+2, (y/2+3)+rect_add*6, 255, 255, 255, 255, nc_panel_info, string.format("Fake Peek: %s", fakepeek))
+        surface.draw_text(x/y+2, (y/2+3)+32/2*6, 255, 255, 255, 255, nc_panel_info, string.format("Fake Peek: %s", fakepeek))
 
         indicators = {}
     end
-
-    if not ui.get(nc_enable) then return end
-    local enemies = entity.get_players(not enemies_only)
-    for i=1, #enemies do
-        local enemy = enemies[i]
-        local bbox = {entity.get_bounding_box(enemy)}
-        if bbox[1] == nil and bbox[2] == nil then return end
-        local height, width = bbox[4]-bbox[2], bbox[3]-bbox[1]
-        local epx, epy, epz = entity.get_prop(enemy, "m_vecOrigin")
-        local lpx, lpy, lpz = entity.get_prop(entity.get_local_player(), "m_vecOrigin")
-        local distance = get_distance_in_feet(lpx, lpy, lpz, epx, epy, epz)
+end
 
 
-        --[[ HEALTH ]]
-        local health = entity.get_prop(enemy, "m_iHealth")
-        local h, s, v = lerp(0, 1, 1, 120, 1, 1, health*0.01)
-        local hr, hg, hb = HSVToRGB(h/360, s, v)
-
-        if ui.get(nc_health) == "Flat" then
-            renderer.rectangle(bbox[1]-6, bbox[2]-1, 4, height+4, 17, 17, 17, 255)
-            renderer.rectangle(bbox[1]-5, bbox[4]+2, 2, (-height*health/100)-2, hr, hg, hb, 255)
-        elseif ui.get(nc_health) == "Gradient" then
-            renderer.rectangle(bbox[1]-6, bbox[2]-1, 4, height+4, 17, 17, 17, 255)
-            renderer.gradient(bbox[1]-5, bbox[4]+2, 2, (-height*health/100)-2, 255, 45, 0, 255, hr, hg, hb, 255, false)
-        else
-        end
-        --[[ END_HEALTH ]]
-
-        --[[ TEAM_COLOR ]]
-        local get_team = entity.get_prop(enemy, "m_iTeamNum")
-        if get_team == 0 then
-            r,g,b,a = ui.get(nc_team_none)
-        elseif get_team == 1 then
-            r,g,b,a = ui.get(nc_team_spec)
-        elseif get_team == 2 then
-            r,g,b,a = ui.get(nc_team_t)
-        elseif get_team == 3 then
-            r,g,b,a = ui.get(nc_team_ct)
-        end
-
-        if contains(ui.get(nc_team), "Glow") then
-            ui.set(glow_color, r,g,b,155)
-        end
-        if contains(ui.get(nc_team), "Chams") then
-            ui.set(chams_color, r,g,b,a)
-        end
-        if contains(ui.get(nc_team), "Chams XQZ") then
-            ui.set(chams_xqz_color, r,g,b,a)
-        end
-        if contains(ui.get(nc_team), "Shadow") then
-            ui.set(shadow_color, r,g,b,175)
-        end
-        --[[ END_TEAM_COLOR ]]
-
-        --[[ BOX_ESP ]]
-
-        if ui.get(nc_box) == "2D" then
-            surface.draw_outlined_rect(bbox[1], bbox[2], width, height+2, r,g,b,a)
-        elseif ui.get(nc_box) == "2D Rainbow" then
-            rr, rg, rb = func_rgb_rainbowize(0.15, 1)
-
-            renderer.gradient(bbox[1], bbox[2], 1, height+2, rr, rg, rb, 255, rg, rb, rr, 255, false)
-            renderer.gradient(bbox[3], bbox[2], 1, height+2, rr, rg, rb, 255, rg, rb, rr, 255, false)
-
-            renderer.gradient(bbox[1], bbox[2], width, 1, rr, rg, rb, 255, rg, rb, rr, 255, false)
-            renderer.gradient(bbox[1], bbox[4]+2, width+1, 1, rr, rg, rb, 255, rg, rb, rr, 255, false)
-        end
-        --[[ END_BOX_ESP ]]
-
-
-        --[[ STRINGS ]]
-        if ui.get(nc_name) then
-            surface.draw_text(bbox[1]+3, bbox[2]-name_add, r, g, b, a, nc_font, entity.get_player_name(enemy))
-        end
-        if ui.get(nc_weapon) then
-            name_add = 35
-            distance_add = 50
-            local wr, wg, wb, wa = ui.get(nc_weapon_clr)
-            surface.draw_text(bbox[1]+3, bbox[2]-20, wr, wg, wb, wa, nc_font, get_weapon(enemy))
-        else
-            name_add = 20
-            distance_add = 35
-        end
-
-        if ui.get(nc_distance) then
-            local dr, dg, db, da = ui.get(nc_distance_clr)
-            surface.draw_text(bbox[1]+3, bbox[2]-distance_add, dr, dg, db, da, nc_font, string.format("Distance: %sf", distance))
-        end
-
-        --[[ END_STRINGS ]]
+local function getteam(index)
+    local get_team = entity.get_prop(index, "m_iTeamNum")
+    if get_team == 0 then
+        return {238, 182, 41, 255}
+    elseif get_team == 1 then
+        return {204, 204, 204, 255}
+    elseif get_team == 2 then
+        return {255, 61, 61, 255}
+    elseif get_team == 3 then
+        return {154, 205, 255, 255}
     end
 end
 
---[[ CALLBACKS ]]
-client.set_event_callback("paint", draw_nce)
+local add = 0
+local function draw_esp()
+    local x,y = client.screen_size()
+    local enemies = collect_players()
+    for i=1, #enemies do
+        local enemy = enemies[i]
+        local index = unpack(enemy)
+        if entity.is_enemy(index) then
+
+            local bbox = {entity.get_bounding_box(index)}
+            if bbox[1] == nil and bbox[2] == nil then return end
+            local height, width = bbox[4]-bbox[2], bbox[3]-bbox[1]
+
+            local health = entity.get_prop(index, "m_iHealth")
+            local h, s, v = lerp(0, 1, 1, 120, 1, 1, health*0.01)
+            local hr, hg, hb = HSVToRGB(h/360, s, v)
+    
+            if ui.get(nc_health) == "Flat" then
+                local color = entity.is_dormant(index) and {100, 100, 100, 255} or {hr, hg, hb, 255}
+                renderer.rectangle(bbox[1]-6, bbox[2]-1, 4, height+4, 17, 17, 17, 255)
+                renderer.rectangle(bbox[1]-5, bbox[4]+2, 2, (-height*health/100)-2, color[1],color[2],color[3], 255)
+            elseif ui.get(nc_health) == "Gradient" then
+                local bcolor = entity.is_dormant(index) and {100, 100, 100, 255} or {hr, hg, hb, 255}
+                local acolor = entity.is_dormant(index) and {100, 100, 100, 255} or {255, 45, 0, 255}
+                renderer.rectangle(bbox[1]-6, bbox[2]-1, 4, height+4, 17, 17, 17, 255)
+                renderer.gradient(bbox[1]-5, bbox[4]+2, 2, (-height*health/100)-2, acolor[1],acolor[2],acolor[3], 255, bcolor[1],bcolor[2],bcolor[3], 255, false)
+            else
+            end
+
+            local color = entity.is_dormant(index) and {100, 100, 100, 255} or getteam(index)
+
+            if ui.get(nc_box) == "2D" then
+                surface.draw_outlined_rect(bbox[1], bbox[2], width, height+2, color[1],color[2],color[3],color[4])
+            elseif ui.get(nc_box) == "2D Rainbow" then
+                local color = entity.is_dormant(index) and {100, 100, 100, 255} or {func_rgb_rainbowize(0.15, 1)}
+    
+                renderer.gradient(bbox[1], bbox[2], 1, height+2, color[1],color[2],color[3], 255, color[2],color[3],color[1], 255, false)
+                renderer.gradient(bbox[3], bbox[2], 1, height+2, color[1],color[2],color[3], 255, color[2],color[3],color[1], 255, false)
+    
+                renderer.gradient(bbox[1], bbox[2], width, 1, color[1],color[2],color[3], 255, color[2],color[3],color[1], 255, false)
+                renderer.gradient(bbox[1], bbox[4]+2, width+1, 1, color[1],color[2],color[3], 255, color[2],color[3],color[1], 255, false)
+            end
+
+            local name = entity.get_player_name(index)
+            if name == nil then return end
+            if name:len() > 15 then 
+                name = name:sub(0, 15)
+            end
+            surface.draw_text(bbox[1], bbox[2]-35, color[1], color[2], color[3], 255, ui.get(nc_font_select) == "Old" and nc_font_old or nc_font, name)
+
+            local color = entity.is_dormant(index) and {100, 100, 100, 255} or {200, 255, 190, 255}
+            local weapon_id = entity.get_prop(index, "m_hActiveWeapon")
+            if entity.get_prop(weapon_id, "m_iItemDefinitionIndex") ~= nil then
+                weapon_item_index = bit.band(entity.get_prop(weapon_id, "m_iItemDefinitionIndex"), 0xFFFF)
+            end
+
+            local weapon_name = weapons[weapon_item_index]
+            if weapon_name == nil then return end
+
+            if weapon_name:len() > 15 then 
+                weapon_name = weapon_name:sub(0, 15)
+            end
+            surface.draw_text(bbox[1], bbox[2]-20, color[1], color[2], color[3], color[4], ui.get(nc_font_select) == "Old" and nc_font_old or nc_font, weapon_name)
+
+            if ui.get(nc_conditions) then
+                local color = entity.is_dormant(index) and {100, 100, 100, 255} or {3, 252, 223, 255}
+                if entity.get_prop(index, "m_bIsScoped") ~= 0 then
+                    surface.draw_text(bbox[1], bbox[2]-50, color[1], color[2], color[3], color[4], ui.get(nc_font_select) == "Old" and nc_font_old or nc_font, "*ZOOMING*")
+                end
+            end
+        end
+    end
+end
+
+
+local function main()
+    draw_infobar()
+    draw_esp()
+end
+
+client.set_event_callback("paint", main)
