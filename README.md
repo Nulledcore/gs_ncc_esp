@@ -4,7 +4,7 @@ Nullcore ESP for gamesense.pub
 - Health Bar [gradient/flat]
 - Name label
 - Weapon label
-- NCU label (based on steam64)
+- Condition label
 - Info panel (based on the old info panel on nullcore)
 - Team based colors (none/spec/t/ct)
 
