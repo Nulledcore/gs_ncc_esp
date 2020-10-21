@@ -19,6 +19,7 @@ local nc_health = ui.new_combobox(menu[1], menu[2], "Health bar", {"Off", "Flat"
 local nc_box = ui.new_combobox(menu[1], menu[2], "Box", {"Off", "2D", "2D Rainbow"})
 
 local nc_font_select = ui.new_combobox(menu[1], menu[2], "Font type", {"New", "Old"})
+local nc_weapon = ui.new_checkbox(menu[1], menu[2], "Weapon label")
 local nc_conditions = ui.new_checkbox(menu[1], menu[2], "Conditions label")
 
 
@@ -237,64 +238,66 @@ local function draw_esp()
         if entity.is_enemy(index) then
 
             local bbox = {entity.get_bounding_box(index)}
-            if bbox[1] == nil and bbox[2] == nil then return end
-            local height, width = bbox[4]-bbox[2], bbox[3]-bbox[1]
+            if bbox[1] ~= nil or bbox[2] ~= nil or bbox[3] ~= nil or bbox[4] ~= nil or bbox[5] ~= 0 then
+                local height, width = bbox[4]-bbox[2], bbox[3]-bbox[1]
 
-            local health = entity.get_prop(index, "m_iHealth")
-            local h, s, v = lerp(0, 1, 1, 120, 1, 1, health*0.01)
-            local hr, hg, hb = HSVToRGB(h/360, s, v)
-    
-            if ui.get(nc_health) == "Flat" then
-                local color = entity.is_dormant(index) and {100, 100, 100, 255} or {hr, hg, hb, 255}
-                renderer.rectangle(bbox[1]-6, bbox[2]-1, 4, height+4, 17, 17, 17, 255)
-                renderer.rectangle(bbox[1]-5, bbox[4]+2, 2, (-height*health/100)-2, color[1],color[2],color[3], 255)
-            elseif ui.get(nc_health) == "Gradient" then
-                local bcolor = entity.is_dormant(index) and {100, 100, 100, 255} or {hr, hg, hb, 255}
-                local acolor = entity.is_dormant(index) and {100, 100, 100, 255} or {255, 45, 0, 255}
-                renderer.rectangle(bbox[1]-6, bbox[2]-1, 4, height+4, 17, 17, 17, 255)
-                renderer.gradient(bbox[1]-5, bbox[4]+2, 2, (-height*health/100)-2, acolor[1],acolor[2],acolor[3], 255, bcolor[1],bcolor[2],bcolor[3], 255, false)
-            else
-            end
+                local health = entity.get_prop(index, "m_iHealth")
+                local h, s, v = lerp(0, 1, 1, 120, 1, 1, health*0.01)
+                local hr, hg, hb = HSVToRGB(h/360, s, v)
+        
+                if ui.get(nc_health) == "Flat" then
+                    local color = entity.is_dormant(index) and {100, 100, 100, 255} or {hr, hg, hb, 255}
+                    renderer.rectangle(bbox[1]-6, bbox[2]-1, 4, height+4, 17, 17, 17, 255)
+                    renderer.rectangle(bbox[1]-5, bbox[4]+2, 2, (-height*health/100)-2, color[1],color[2],color[3], 255)
+                elseif ui.get(nc_health) == "Gradient" then
+                    local bcolor = entity.is_dormant(index) and {100, 100, 100, 255} or {hr, hg, hb, 255}
+                    local acolor = entity.is_dormant(index) and {100, 100, 100, 255} or {255, 45, 0, 255}
+                    renderer.rectangle(bbox[1]-6, bbox[2]-1, 4, height+4, 17, 17, 17, 255)
+                    renderer.gradient(bbox[1]-5, bbox[4]+2, 2, (-height*health/100)-2, acolor[1],acolor[2],acolor[3], 255, bcolor[1],bcolor[2],bcolor[3], 255, false)
+                else
+                end
 
-            local color = entity.is_dormant(index) and {100, 100, 100, 255} or getteam(index)
+                local color = entity.is_dormant(index) and {100, 100, 100, 255} or getteam(index)
 
-            if ui.get(nc_box) == "2D" then
-                surface.draw_outlined_rect(bbox[1], bbox[2], width, height+2, color[1],color[2],color[3],color[4])
-            elseif ui.get(nc_box) == "2D Rainbow" then
-                local color = entity.is_dormant(index) and {100, 100, 100, 255} or {func_rgb_rainbowize(0.15, 1)}
-    
-                renderer.gradient(bbox[1], bbox[2], 1, height+2, color[1],color[2],color[3], 255, color[2],color[3],color[1], 255, false)
-                renderer.gradient(bbox[3], bbox[2], 1, height+2, color[1],color[2],color[3], 255, color[2],color[3],color[1], 255, false)
-    
-                renderer.gradient(bbox[1], bbox[2], width, 1, color[1],color[2],color[3], 255, color[2],color[3],color[1], 255, false)
-                renderer.gradient(bbox[1], bbox[4]+2, width+1, 1, color[1],color[2],color[3], 255, color[2],color[3],color[1], 255, false)
-            end
+                if ui.get(nc_box) == "2D" then
+                    surface.draw_outlined_rect(bbox[1], bbox[2], width, height+2, color[1],color[2],color[3],color[4])
+                elseif ui.get(nc_box) == "2D Rainbow" then
+                    local color = entity.is_dormant(index) and {100, 100, 100, 255} or {func_rgb_rainbowize(0.15, 1)}
+        
+                    renderer.gradient(bbox[1], bbox[2], 1, height+2, color[1],color[2],color[3], 255, color[2],color[3],color[1], 255, false)
+                    renderer.gradient(bbox[3], bbox[2], 1, height+2, color[1],color[2],color[3], 255, color[2],color[3],color[1], 255, false)
+        
+                    renderer.gradient(bbox[1], bbox[2], width, 1, color[1],color[2],color[3], 255, color[2],color[3],color[1], 255, false)
+                    renderer.gradient(bbox[1], bbox[4]+2, width+1, 1, color[1],color[2],color[3], 255, color[2],color[3],color[1], 255, false)
+                end
 
-            local name = entity.get_player_name(index)
-            if name == nil then return end
-            if name:len() > 15 then 
-                name = name:sub(0, 15)
-            end
-            surface.draw_text(bbox[1], bbox[2]-35, color[1], color[2], color[3], 255, ui.get(nc_font_select) == "Old" and nc_font_old or nc_font, name)
+                local name = entity.get_player_name(index)
+                if name == nil then return end
+                if name:len() > 15 then 
+                    name = name:sub(0, 15)
+                end
+                surface.draw_text(bbox[1], bbox[2]-(ui.get(nc_weapon) and 35 or 20), color[1], color[2], color[3], 255, ui.get(nc_font_select) == "Old" and nc_font_old or nc_font, name)
 
-            local color = entity.is_dormant(index) and {100, 100, 100, 255} or {200, 255, 190, 255}
-            local weapon_id = entity.get_prop(index, "m_hActiveWeapon")
-            if entity.get_prop(weapon_id, "m_iItemDefinitionIndex") ~= nil then
-                weapon_item_index = bit.band(entity.get_prop(weapon_id, "m_iItemDefinitionIndex"), 0xFFFF)
-            end
+                if ui.get(nc_weapon) then
+                    local color = entity.is_dormant(index) and {100, 100, 100, 255} or {200, 255, 190, 255}
+                    local weapon_id = entity.get_prop(index, "m_hActiveWeapon")
+                    if entity.get_prop(weapon_id, "m_iItemDefinitionIndex") ~= nil then
+                        weapon_item_index = bit.band(entity.get_prop(weapon_id, "m_iItemDefinitionIndex"), 0xFFFF)
+                    end
 
-            local weapon_name = weapons[weapon_item_index]
-            if weapon_name == nil then return end
+                    local weapon_name = weapons[weapon_item_index]
+                    if weapon_name == nil then return end
 
-            if weapon_name:len() > 15 then 
-                weapon_name = weapon_name:sub(0, 15)
-            end
-            surface.draw_text(bbox[1], bbox[2]-20, color[1], color[2], color[3], color[4], ui.get(nc_font_select) == "Old" and nc_font_old or nc_font, weapon_name)
-
-            if ui.get(nc_conditions) then
-                local color = entity.is_dormant(index) and {100, 100, 100, 255} or {3, 252, 223, 255}
-                if entity.get_prop(index, "m_bIsScoped") ~= 0 then
-                    surface.draw_text(bbox[1], bbox[2]-50, color[1], color[2], color[3], color[4], ui.get(nc_font_select) == "Old" and nc_font_old or nc_font, "*ZOOMING*")
+                    if weapon_name:len() > 15 then 
+                        weapon_name = weapon_name:sub(0, 15)
+                    end
+                    surface.draw_text(bbox[1], bbox[2]-20, color[1], color[2], color[3], color[4], ui.get(nc_font_select) == "Old" and nc_font_old or nc_font, weapon_name)
+                end
+                if ui.get(nc_conditions) then
+                    local color = entity.is_dormant(index) and {100, 100, 100, 255} or {3, 252, 223, 255}
+                    if entity.get_prop(index, "m_bIsScoped") ~= 0 then
+                        surface.draw_text(bbox[1], bbox[2]-50, color[1], color[2], color[3], color[4], ui.get(nc_font_select) == "Old" and nc_font_old or nc_font, "*ZOOMING*")
+                    end
                 end
             end
         end
