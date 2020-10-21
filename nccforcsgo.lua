@@ -15,6 +15,10 @@ local nc_panel_header = surface.create_font("Verdana", 13, 600, 0x200)
 local nc_panel_info = surface.create_font("Verdana", 12, 400, 0x200)
 
 local menu = {"lua", "a"}
+local _, chams_color = ui.reference("Visuals", "Colored models", "Player")
+local _, chams_xqz_color = ui.reference("Visuals", "Colored models", "Player behind wall")
+local _, glow_color = ui.reference("Visuals", "Player esp", "Glow")
+
 local nc_info = ui.new_checkbox(menu[1], menu[2], "Info panel")
 local nc_health = ui.new_combobox(menu[1], menu[2], "Health bar", {"Off", "Flat", "Gradient"})
 local nc_box = ui.new_combobox(menu[1], menu[2], "Box", {"Off", "2D", "2D Rainbow"})
@@ -22,6 +26,7 @@ local nc_box = ui.new_combobox(menu[1], menu[2], "Box", {"Off", "2D", "2D Rainbo
 local nc_font_select = ui.new_combobox(menu[1], menu[2], "Font type", {"New", "Old"})
 local nc_weapon = ui.new_checkbox(menu[1], menu[2], "Weapon label")
 local nc_conditions = ui.new_checkbox(menu[1], menu[2], "Conditions label")
+local nc_team_colors = ui.new_checkbox(menu[1], menu[2], "Team based colors [!]")
 
 local weapons = {
     [1] = "Desert Eagle",
@@ -167,34 +172,29 @@ local function draw_infobar()
             elseif cur_i.text == "LC" then cur_i.text = "Lag Compensation"
             elseif cur_i.text == "DUCK" then cur_i.text = "Fake Duck"
             end
-            surface.draw_filled_outlined_rect(x/y, (y/2+2)+32/2*6+(i * 16), 220, 32/2, 53, 66, 69, 200, 15, 150, 150, 255)
+            surface.draw_filled_outlined_rect(x/y, (y/2+2)+32/2*6+(i * 16), 220, 32/2, 53, 66, 69, 100, 15, 150, 150, 255)
             surface.draw_text(x/y+2, (y/2+3)+32/2*6+(i * 16), cur_i.r, cur_i.g, cur_i.b, cur_i.a, nc_panel_info, string.format("%s", cur_i.text))
         end
 
-        surface.draw_filled_outlined_rect(x/y, (y/2+2), 220, 32/2, 53, 66, 69, 200, 15, 150, 150, 255)
+        surface.draw_filled_outlined_rect(x/y, (y/2+2), 220, 32/2, 53, 66, 69, 100, 15, 150, 150, 255)
         surface.draw_text(x/y+(220/2-30), (y/2+2)+1, 255, 255, 255, 255, nc_panel_header, "Info Panel")
 
-        surface.draw_filled_outlined_rect(x/y, (y/2+2)+32/2, 220, 32/2, 53, 66, 69, 200, 15, 150, 150, 255)
+        surface.draw_filled_outlined_rect(x/y, (y/2+2)+32/2, 220, 32/2, 53, 66, 69, 100, 15, 150, 150, 255)
         surface.draw_text(x/y+2, (y/2+3)+32/2, 255, 255, 255, 255, nc_panel_info, string.format("Speed: %s", math.floor(velocity)))
 
-        surface.draw_filled_outlined_rect(x/y, (y/2+2)+32/2*2, 220, 32/2, 53, 66, 69, 200, 15, 150, 150, 255)
-        local aimbot = ui.get(ui.reference("rage", "aimbot", "enabled"))
-        if aimbot or ui.get(ui.reference("legit", "aimbot", "enabled")) then aimbot = "Active" else aimbot = "Inactive" end
-        surface.draw_text(x/y+2, (y/2+3)+32/2*2, 255, 255, 255, 255, nc_panel_info, string.format("Aim Bot: %s", aimbot))
+        surface.draw_filled_outlined_rect(x/y, (y/2+2)+32/2*2, 220, 32/2, 53, 66, 69, 100, 15, 150, 150, 255)
+
+        surface.draw_text(x/y+2, (y/2+3)+32/2*2, 255, 255, 255, 255, nc_panel_info, string.format("Aim Bot: %s", ui.get(ui.reference("rage", "aimbot", "enabled")) and "Active" or "Inactive" or ui.get(ui.reference("legit", "aimbot", "enabled")) and "Active" or "Inactive"))
         
-        surface.draw_filled_outlined_rect(x/y, (y/2+2)+32/2*3, 220, 32/2, 53, 66, 69, 200, 15, 150, 150, 255)
-        local triggerbot = ui.get(ui.reference("legit", "triggerbot", "enabled"))
-        if triggerbot then triggerbot = "Active" else triggerbot = "Inactive" end
-        surface.draw_text(x/y+2, (y/2+3)+32/2*3, 255, 255, 255, 255, nc_panel_info, string.format("Trigger Bot: %s", triggerbot))
+        surface.draw_filled_outlined_rect(x/y, (y/2+2)+32/2*3, 220, 32/2, 53, 66, 69, 100, 15, 150, 150, 255)
 
-        surface.draw_filled_outlined_rect(x/y, (y/2+2)+32/2*4, 220, 32/2, 53, 66, 69, 200, 15, 150, 150, 255)
-        local fakelag = ui.get(ui.reference("aa", "fake lag", "limit"))
-        if not ui.get(ui.reference("aa", "fake lag", "enabled")) then
-            fakelag = "Disabled"
-        end
-        surface.draw_text(x/y+2, (y/2+3)+32/2*4, 255, 255, 255, 255, nc_panel_info, string.format("Fake Lag: %s", fakelag))
+        surface.draw_text(x/y+2, (y/2+3)+32/2*3, 255, 255, 255, 255, nc_panel_info, string.format("Trigger Bot: %s", ui.get(ui.reference("legit", "triggerbot", "enabled")) and "Active" or "Inactive"))
 
-        surface.draw_filled_outlined_rect(x/y, (y/2+2)+32/2*5, 220, 32/2, 53, 66, 69, 200, 15, 150, 150, 255)
+        surface.draw_filled_outlined_rect(x/y, (y/2+2)+32/2*4, 220, 32/2, 53, 66, 69, 100, 15, 150, 150, 255)
+
+        surface.draw_text(x/y+2, (y/2+3)+32/2*4, 255, 255, 255, 255, nc_panel_info, string.format("Fake Lag: %s", ui.get(ui.reference("aa", "fake lag", "enabled")) and "Active" or "Disabled"))
+
+        surface.draw_filled_outlined_rect(x/y, (y/2+2)+32/2*5, 220, 32/2, 53, 66, 69, 100, 15, 150, 150, 255)
         local antiaim = ui.get(ui.reference("aa", "anti-aimbot angles", "enabled"))
         local pitch = ui.get(ui.reference("aa", "anti-aimbot angles", "pitch"))
         local bodyyaw = ui.get(ui.reference("aa", "anti-aimbot angles", "body yaw"))
@@ -205,10 +205,9 @@ local function draw_infobar()
         if antiaim then antiaim = pitch.."/"..bodyyaw else antiaim = "Disabled" end
         surface.draw_text(x/y+2, (y/2+3)+32/2*5, 255, 255, 255, 255, nc_panel_info, string.format("Anti Aim: %s", antiaim))
 
-        surface.draw_filled_outlined_rect(x/y, (y/2+2)+32/2*6, 220, 32/2, 53, 66, 69, 200, 15, 150, 150, 255)
-        local fakepeek = ui.get(ui.reference("aa", "other", "fake peek"))
-        if fakepeek then fakepeek = "Active" else fakepeek = "Inactive" end
-        surface.draw_text(x/y+2, (y/2+3)+32/2*6, 255, 255, 255, 255, nc_panel_info, string.format("Fake Peek: %s", fakepeek))
+        surface.draw_filled_outlined_rect(x/y, (y/2+2)+32/2*6, 220, 32/2, 53, 66, 69, 100, 15, 150, 150, 255)
+
+        surface.draw_text(x/y+2, (y/2+3)+32/2*6, 255, 255, 255, 255, nc_panel_info, string.format("Fake Peek: %s", ui.get(ui.reference("aa", "other", "fake peek")) and "Active" or "Inactive"))
 
         indicators = {}
     end
@@ -222,13 +221,12 @@ local function getteam(index)
     elseif get_team == 1 then
         return {204, 204, 204, 255}
     elseif get_team == 2 then
-        return {255, 61, 61, 255}
+        return {255, 223, 147, 255}
     elseif get_team == 3 then
-        return {154, 205, 255, 255}
+        return {163, 198, 255, 255}
     end
 end
 
-local add = 0
 local function draw_esp()
     local x,y = client.screen_size()
     local enemies = collect_players()
@@ -236,6 +234,13 @@ local function draw_esp()
         local enemy = enemies[i]
         local index = unpack(enemy)
         if entity.is_enemy(index) then
+
+            if ui.get(nc_team_colors) then
+                local team_color = getteam(index)
+                ui.set(chams_color, team_color[1], team_color[2], team_color[3], team_color[4])
+                ui.set(chams_xqz_color, team_color[1], team_color[2], team_color[3], team_color[4])
+                ui.set(glow_color, team_color[1], team_color[2], team_color[3], 125)
+            end
 
             local bbox = {entity.get_bounding_box(index)}
             if bbox[1] ~= nil or bbox[2] ~= nil or bbox[3] ~= nil or bbox[4] ~= nil or bbox[5] ~= 0 then
