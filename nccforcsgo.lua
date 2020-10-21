@@ -6,7 +6,8 @@
     Aviarita - Surface library
     TTVM Discord - Feedback
     
- ]]
+]]
+
 local surface = require('gamesense/surface')
 local nc_font = surface.create_font("Verdana", 16, 600, 0x200)
 local nc_font_old = surface.create_font("Verdana", 16, 400, 0x200)
@@ -21,7 +22,6 @@ local nc_box = ui.new_combobox(menu[1], menu[2], "Box", {"Off", "2D", "2D Rainbo
 local nc_font_select = ui.new_combobox(menu[1], menu[2], "Font type", {"New", "Old"})
 local nc_weapon = ui.new_checkbox(menu[1], menu[2], "Weapon label")
 local nc_conditions = ui.new_checkbox(menu[1], menu[2], "Conditions label")
-
 
 local weapons = {
     [1] = "Desert Eagle",
@@ -296,7 +296,7 @@ local function draw_esp()
                 if ui.get(nc_conditions) then
                     local color = entity.is_dormant(index) and {100, 100, 100, 255} or {3, 252, 223, 255}
                     if entity.get_prop(index, "m_bIsScoped") ~= 0 then
-                        surface.draw_text(bbox[1], bbox[2]-50, color[1], color[2], color[3], color[4], ui.get(nc_font_select) == "Old" and nc_font_old or nc_font, "*ZOOMING*")
+                        surface.draw_text(bbox[1], bbox[2]-(ui.get(nc_weapon) and 50 or 35), color[1], color[2], color[3], color[4], ui.get(nc_font_select) == "Old" and nc_font_old or nc_font, "*ZOOMING*")
                     end
                 end
             end
